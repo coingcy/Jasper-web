@@ -1,0 +1,47 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#73786b"><title>Jasper — 输入访问暗号</title><style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#73786b;color:#f2f0df;font-family:Arial,"PingFang SC","Microsoft YaHei",sans-serif}body{min-height:100svh;display:grid;place-items:center;padding:28px}.brand{position:fixed;top:max(28px,env(safe-area-inset-top));left:clamp(25px,5vw,80px);font-size:25px;font-weight:900;letter-spacing:-1.5px}.brand sup{font-size:10px;vertical-align:top;margin-left:3px}.gate{width:min(100%,440px);padding:65px 0 30px}.eyebrow{font:10px monospace;letter-spacing:.12em;margin-bottom:30px}.eyebrow:before{content:'✳';color:#e9ff88;font-size:20px;margin-right:12px}h1{font-size:clamp(43px,6vw,66px);line-height:1.15;letter-spacing:-.065em;margin:0 0 25px}h1 span{color:#e9ff88}p{font-size:13px;line-height:1.9;opacity:.7;margin-bottom:34px}label{display:block;font:10px monospace;letter-spacing:.08em;margin-bottom:10px}input{font:22px Arial,sans-serif;letter-spacing:8px;background:#ffffff09;color:#f2f0df;border:1px solid #f2f0df55;border-radius:4px;width:100%;height:60px;padding:0 18px;outline:none}input:focus{border-color:#e9ff88}button{display:flex;justify-content:space-between;align-items:center;width:100%;margin-top:15px;border:0;border-radius:40px;background:#e9ff88;color:#24291f;padding:18px 23px;font-size:13px;cursor:pointer}button:disabled{opacity:.6;cursor:wait}button:focus-visible{outline:2px solid #f2f0df;outline-offset:4px}.arrow{font-size:21px}.status{font-size:12px;color:#f2f0dfbb;min-height:22px;margin:12px 0 0;line-height:1.7}.status.error{color:#ffe1d9}.fine{font:9px monospace;letter-spacing:.12em;opacity:.45;margin-top:30px}.foot{position:fixed;bottom:max(25px,env(safe-area-inset-bottom));left:clamp(25px,5vw,80px);font:9px monospace;opacity:.5;letter-spacing:.12em}.bar{height:2px;background:#f2f0df33;margin-top:18px;overflow:hidden;opacity:0;transition:opacity .2s}.bar.loading{opacity:1}.bar span{display:block;width:100%;height:100%;background:#e9ff88;transform:scaleX(var(--p,0));transform-origin:left;transition:transform .15s}iframe{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:30;background:#73786b}iframe[hidden]{display:none}body.opened>.brand,body.opened>.gate,body.opened>.foot{display:none}@media(max-height:650px){.brand{top:20px}.gate{padding:60px 0}.eyebrow{margin-bottom:16px}h1{font-size:42px}p{margin-bottom:20px}.fine{margin-top:20px}.foot{bottom:15px}}
+</style></head><body><div class="brand">jasper<sup>®</sup></div><main class="gate"><div class="eyebrow">A PRIVATE LITTLE UNIVERSE</div><h1>好奇，<br><span>需要一点暗号。</span></h1><p>欢迎来到我的脑内小剧场。<br>输入数字密码，让灵感开场。</p><form id="unlock"><label for="password">ACCESS CODE / 访问密码</label><input id="password" type="password" inputmode="numeric" pattern="[0-9]+" autocomplete="current-password" required maxlength="32" autofocus aria-describedby="status"><div class="status" id="status" role="status" aria-live="polite"></div><button id="submit" type="submit"><span id="button-text">进入小剧场</span><span class="arrow" aria-hidden="true">↗</span></button><div class="bar" id="bar" aria-hidden="true"><span></span></div></form><div class="fine">A LITTLE STRANGE. A LOT OF HEART.</div></main><div class="foot">JASPER® / PERSONALITY IS THE PORTFOLIO.</div><iframe id="portfolio" title="Jasper 设计师作品集" allow="autoplay; fullscreen" hidden></iframe><noscript>请启用 JavaScript 后输入访问密码。</noscript><script>
+'use strict';
+const DATA={"version":1,"salt":"bjzoqd0VlBt47RNyEIDeqYMY1mgGL0rM","iterations":600000,"page":{"file":"content.e7a049b4a535.enc","iv":"ZhUW9Yggy80655oP","bytes":341263},"media":{"file":"media.cbd0b538344b.enc","iv":"k2e0ZiryAfb5Q2aa","bytes":33947903}};
+const form=document.querySelector('#unlock'),input=document.querySelector('#password'),statusEl=document.querySelector('#status'),button=document.querySelector('#submit'),buttonText=document.querySelector('#button-text'),bar=document.querySelector('#bar'),frame=document.querySelector('#portfolio');
+let htmlURL='',videoURL='',busy=false;
+const from64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+function message(text,error=false){statusEl.textContent=text;statusEl.classList.toggle('error',error);}
+async function download(path,onProgress){
+ const response=await fetch(new URL(path,location.href),{cache:'force-cache'});
+ if(!response.ok)throw Error('DOWNLOAD');
+ const total=Number(response.headers.get('content-length')||0);
+ if(!response.body)return response.arrayBuffer();
+ const reader=response.body.getReader(),chunks=[];let doneBytes=0;
+ while(true){const {done,value}=await reader.read();if(done)break;chunks.push(value);doneBytes+=value.byteLength;if(onProgress)onProgress(doneBytes,total);}
+ const result=new Uint8Array(doneBytes);let offset=0;for(const chunk of chunks){result.set(chunk,offset);offset+=chunk.length;}return result.buffer;
+}
+function lock(){
+ frame.hidden=true;frame.removeAttribute('srcdoc');frame.removeAttribute('src');document.body.classList.remove('opened');
+ if(htmlURL)URL.revokeObjectURL(htmlURL);if(videoURL)URL.revokeObjectURL(videoURL);htmlURL='';videoURL='';input.value='';message('小剧场已锁定。');input.focus();
+}
+window.addEventListener('message',event=>{if(event.source===frame.contentWindow&&event.data?.type==='jasper:lock')lock();});
+form.addEventListener('submit',async event=>{
+ event.preventDefault();if(busy)return;busy=true;button.disabled=true;input.disabled=true;bar.classList.add('loading');bar.style.setProperty('--p','.02');buttonText.textContent='正在验证暗号…';message('');let authenticated=false;
+ try{
+  if(!window.crypto?.subtle)throw Error('CRYPTO_UNAVAILABLE');
+  const raw=await crypto.subtle.importKey('raw',new TextEncoder().encode(input.value),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:from64(DATA.salt),iterations:DATA.iterations,hash:'SHA-256'},raw,{name:'AES-GCM',length:256},false,['decrypt']);
+  const cipher=await download(DATA.page.file);
+  let plain;
+  try{plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:from64(DATA.page.iv)},key,cipher);}catch{throw Error('BAD_PASSWORD');}
+  authenticated=true;input.value='';bar.style.setProperty('--p','.05');buttonText.textContent='正在准备小剧场…';message('暗号正确，正在解锁视频。');
+  const encryptedVideo=await download(DATA.media.file,(loaded,total)=>{const size=total||DATA.media.bytes;const p=Math.min(1,loaded/size);bar.style.setProperty('--p',String(.05+p*.85));message(`暗号正确，正在解锁视频 ${Math.floor(p*100)}%`);});
+  const videoBytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:from64(DATA.media.iv)},key,encryptedVideo);
+  videoURL=URL.createObjectURL(new Blob([videoBytes],{type:'video/mp4'}));
+  const html=new TextDecoder().decode(plain).replaceAll('__JASPER_MEDIA_URL__',videoURL);
+  frame.srcdoc=html;
+  bar.style.setProperty('--p','1');frame.hidden=false;document.body.classList.add('opened');message('');
+ }catch(error){
+  if(htmlURL)URL.revokeObjectURL(htmlURL);if(videoURL)URL.revokeObjectURL(videoURL);htmlURL='';videoURL='';
+  if(error.message==='BAD_PASSWORD'){message('暗号不对，再试一次吧。',true);}
+  else if(error.message==='CRYPTO_UNAVAILABLE'){message('请使用新版浏览器，通过 HTTPS 网址打开此页。',true);}
+  else message(authenticated?'视频加载未完成，请重新输入密码重试。':'页面加载失败，请稍后重试。',true);
+ }finally{busy=false;button.disabled=false;input.disabled=false;buttonText.textContent='进入小剧场';bar.classList.remove('loading');if(!document.body.classList.contains('opened'))input.focus();}
+});
+</script></body></html>
